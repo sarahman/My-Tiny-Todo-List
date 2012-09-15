@@ -54,4 +54,11 @@ abstract class BaseController extends CI_Controller
     }
 
     protected function initialize() {}
+
+    protected function jsonExit($data)
+    {
+        header('Content-type: application/json; charset=utf-8');
+        echo json_encode($data);
+        exit;
+    }
 }

@@ -33,24 +33,24 @@ mytinytodoStorageAjax.prototype =
 
 	loadLists: function(params, callback)
 	{
-		$.getJSON(this.mtt.mttUrl+'ajax.php?loadLists'+'&rnd='+Math.random(), callback);
+		$.getJSON(this.mtt.mttUrl+'home/loadLists/rnd/'+Math.random(), callback);
 	},
 
 
 	loadTasks: function(params, callback)
 	{
 		var q = '';
-		if(params.search && params.search != '') q += '&s='+encodeURIComponent(params.search);
-		if(params.tag && params.tag != '') q += '&t='+encodeURIComponent(params.tag);
-		if(params.setCompl && params.setCompl != 0) q += '&setCompl=1';
-		q += '&rnd='+Math.random();
+		if(params.search && params.search != '') q += '/s/'+encodeURIComponent(params.search);
+		if(params.tag && params.tag != '') q += '/t/'+encodeURIComponent(params.tag);
+		if(params.setCompl && params.setCompl != 0) q += '/setCompl/1';
+		q += '/rnd/'+Math.random();
 
 /*		$.getJSON(mtt.mttUrl+'ajax.php?loadTasks&list='+params.list+'&compl='+params.compl+'&sort='+params.sort+'&tz='+params.tz+q, function(json){
 			callback.call(mtt, json);
 		})
 */
 
-		$.getJSON(this.mtt.mttUrl+'ajax.php?loadTasks&list='+params.list+'&compl='+params.compl+'&sort='+params.sort+q, callback);
+		$.getJSON(this.mtt.mttUrl+'home/loadTasks/list/'+params.list+'/compl/'+params.compl+'/sort/'+params.sort+q, callback);
 	},
 
 
