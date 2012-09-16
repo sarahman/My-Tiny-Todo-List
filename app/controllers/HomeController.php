@@ -12,29 +12,22 @@ class HomeController extends BaseController
         $this->load->view('home/index', $this->data);
     }
 
-    public function loadLists()
-    {
-        $this->load->model('tinylist');
-        $result = $this->tinylist->get(array('isLogged' => $this->session->userdata('username')));
-        $this->jsonExit($result);
-    }
-
     public function loadTasks()
     {
         $getData = $this->uri->uri_to_assoc();
         $this->load->model('tinylist');
         $this->load->model('tag');
         $this->load->model('todolist');
-        $this->checkReadAccess($getData['list']);
+        $this->checkReadAccess($getData['list'], $this->tinylist);
 
         $sqlWhere = $inner = '';
         $listId = $getData['list'];
-        $db->prefix = 'mtt_';
+        $dbPrefix = $this->db->dbprefix;
         if($listId == -1) {
             $userLists = $this->tinylist->getUserListsSimple();
-            $sqlWhere .= " AND {$db->prefix}todolist.list_id IN (". implode(array_keys($userLists), ','). ") ";
+            $sqlWhere .= " AND {$dbPrefix}todolist.list_id IN (". implode(array_keys($userLists), ','). ") ";
         }
-        else $sqlWhere .= " AND {$db->prefix}todolist.list_id=". $listId;
+        else $sqlWhere .= " AND {$dbPrefix}todolist.list_id=". $listId;
         if ($getData['compl'] == 0) $sqlWhere .= ' AND compl=0';
 
         $tag = empty($getData['t']) ? '' : $getData['t'];
@@ -54,23 +47,24 @@ class HomeController extends BaseController
             }
 
             if(sizeof($tagIds) > 1) {
-                $inner .= "INNER JOIN (SELECT task_id, COUNT(tag_id) AS c FROM {$db->prefix}tag2task WHERE list_id=$listId AND tag_id IN (".
+                $inner .= "INNER JOIN (SELECT task_id, COUNT(tag_id) AS c FROM {$dbPrefix}tag2task WHERE list_id=$listId AND tag_id IN (".
                             implode(',',$tagIds). ") GROUP BY task_id) AS t2t ON id=t2t.task_id";
                 $sqlWhere = " AND c=". sizeof($tagIds); //overwrite sqlWhere!
             }
             elseif($tagIds) {
-                $inner .= "INNER JOIN {$db->prefix}tag2task ON id=task_id";
+                $inner .= "INNER JOIN {$dbPrefix}tag2task ON id=task_id";
                 $sqlWhere .= " AND tag_id = ". $tagIds[0];
             }
 
             if($tagExIds) {
-                $sqlWhere .= " AND id NOT IN (SELECT DISTINCT task_id FROM {$db->prefix}tag2task WHERE list_id=$listId AND tag_id IN (".
+                $sqlWhere .= " AND id NOT IN (SELECT DISTINCT task_id FROM {$dbPrefix}tag2task WHERE list_id=$listId AND tag_id IN (".
                             implode(',',$tagExIds). "))"; //DISTINCT ?
             }
         }
 
+        $this->load->helper('database_helper');
         $s = $this->uri->segment('s');
-        if($s != '') $sqlWhere .= " AND (title LIKE ". $this->quoteForLike("%%%s%%",$s). " OR note LIKE ". $this->quoteForLike("%%%s%%",$s). ")";
+        if($s != '') $sqlWhere .= " AND (title LIKE ". quoteForLike("%%%s%%",$s). " OR note LIKE ". quoteForLike("%%%s%%",$s). ")";
         $sort = (int)$this->uri->segment('sort');
         $sqlSort = "ORDER BY compl ASC, ";
         if($sort == 1) $sqlSort .= "prio DESC, ddn ASC, duedate ASC, ow ASC";		// byPrio
@@ -86,13 +80,13 @@ class HomeController extends BaseController
         $t = array();
         $t['total'] = 0;
         $t['list'] = array();
-        $q = $this->todolist->executeQuery("SELECT *, duedate IS NULL AS ddn FROM {$db->prefix}todolist $inner WHERE 1=1 $sqlWhere $sqlSort");
+        $q = $this->todolist->executeQuery("SELECT *, duedate IS NULL AS ddn FROM {$dbPrefix}todolist $inner WHERE 1=1 $sqlWhere $sqlSort");
 
         foreach ($q AS $r) {
             $t['total']++;
             $t['list'][] = $this->todolist->prepareTaskRow($r);
         }
-        if ($this->uri->segment('setCompl') && $this->haveWriteAccess($listId)) {
+        if ($this->uri->segment('setCompl') && $this->haveWriteAccess($listId, $this->tinylist)) {
             $bitwise = ($this->uri->segment('compl') == 0) ? 'taskview & ~1' : 'taskview | 1';
             $this->tinylist->update(array('taskview' => $bitwise), $listId);
         }
@@ -102,41 +96,6 @@ class HomeController extends BaseController
     public function getJSData()
     {
         header('Content-type: text/javascript; charset=utf-8');
-        echo $this->lang->makeJS();
-    }
-
-    protected function checkReadAccess($listId = null)
-    {
-        if (!$this->session->userdata('username') || $this->tinylist->checkPublishedListExist($listId)) {
-            return;
-        }
-
-        $this->jsonExit(array('total' => 0, 'list' => array(), 'denied' => 1));
-    }
-
-    protected function haveWriteAccess($listId = null)
-    {
-        if ($this->is_readonly()) {
-            return false;
-        } elseif ($listId !== null) {
-            return $this->tinylist->checkListExist($listId);
-        }
-
-        return true;
-    }
-
-    function is_readonly()
-    {
-        if (!$this->config->item('needAuth') && !$this->session->userdata('username')) {
-            return true;
-        }
-
-        return false;
-    }
-
-    function quoteForLike($format, $s)
-    {
-        $s = str_replace(array('%','_'), array('\%','\_'), addslashes($s));
-        return '\''. sprintf($format, $s). '\'';
+        echo "mytinytodo.lang.init(". $this->lang->makeJS() .");";
     }
 }

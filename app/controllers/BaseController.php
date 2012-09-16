@@ -61,4 +61,44 @@ abstract class BaseController extends CI_Controller
         echo json_encode($data);
         exit;
     }
+
+    protected function checkReadAccess($listId = null, $model)
+    {
+        if (!$this->is_logged() || $model->checkPublishedListExist($listId)) {
+            return;
+        }
+
+        $this->jsonExit(array('total' => 0, 'list' => array(), 'denied' => 1));
+    }
+
+    protected function checkWriteAccess($listId = null, $model)
+    {
+        if ($this->haveWriteAccess($listId, $model)) return;
+        $this->jsonExit( array('total'=>0, 'list'=>array(), 'denied'=>1) );
+    }
+
+    protected function haveWriteAccess($listId = null, $model)
+    {
+        if ($this->is_readonly()) {
+            return false;
+        } elseif ($listId !== null) {
+            return $model->checkListExist($listId);
+        }
+
+        return true;
+    }
+
+    protected function is_readonly()
+    {
+        if ($this->config->item('needAuth') && !$this->is_logged()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    protected function is_logged()
+    {
+        return $this->session->userdata('username');
+    }
 }

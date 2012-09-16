@@ -10,13 +10,13 @@ class TinyList extends My_Model
 
     public function get($conditions = array())
     {
-        $where = array();
-
-        if ($conditions['isLogged']) {
-            $where['published'] = 1;
+        if (!empty($conditions['isLogged'])) {
+            $conditions['published'] = 1;
         }
 
-        $result = $this->findAll($where, '*', 'ow ASC, id ASC');
+        unset($conditions['isLogged']);
+
+        $result = $this->findAll($conditions, '*', 'ow ASC, id ASC');
 
         $t = array();
         $t['total'] = 0;
@@ -26,6 +26,35 @@ class TinyList extends My_Model
         }
 
         return $t;
+    }
+
+    public function add(array $data)
+    {
+        $CI = & get_instance();
+        $CI->load->helper('database');
+        $data['uuid'] = generateUUID();
+        $data['name'] = str_replace(array('"',"'",'<','>','&'),array('','','','',''),$data['name']);
+        $data['d_created'] = $data['d_edited'] = time();
+
+        return $this->insert($data);
+    }
+
+    public function modify(array $data)
+    {
+        $data['name'] = str_replace(array('"',"'",'<','>','&'),array('','','','',''),$data['name']);
+        $data['d_edited'] = time();
+
+        return $this->update($data, $data['list']);
+    }
+
+    public function delete(array $data)
+    {
+        $escapedId = $this->db->escape($data[$this->primaryKey]);
+        $this->db->trans_start();
+        $this->db->query("DELETE FROM {$this->db->dbprefix('lists')} WHERE `id`={$escapedId}");
+        $this->db->query("DELETE FROM {$this->db->dbprefix('tag2task')} WHERE `list_id`={$escapedId}");
+        $this->db->query("DELETE FROM {$this->db->dbprefix('todolist')} WHERE `list_id`={$escapedId}");
+        $this->db->trans_complete();
     }
 
     public function getUserListsSimple()

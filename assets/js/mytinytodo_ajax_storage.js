@@ -33,7 +33,7 @@ mytinytodoStorageAjax.prototype =
 
 	loadLists: function(params, callback)
 	{
-		$.getJSON(this.mtt.mttUrl+'home/loadLists/rnd/'+Math.random(), callback);
+		$.getJSON(this.mtt.mttUrl+'list/loadLists/rnd/'+Math.random(), callback);
 	},
 
 
@@ -134,18 +134,18 @@ mytinytodoStorageAjax.prototype =
 	// Lists
 	addList: function(params, callback)
 	{
-		$.post(this.mtt.mttUrl+'ajax.php?addList', { name:params.name }, callback, 'json'); 
+		$.post(this.mtt.mttUrl+'list/add', { name:params.name }, callback, 'json');
 
 	},
 
 	renameList:  function(params, callback)
 	{
-		$.post(this.mtt.mttUrl+'ajax.php?renameList', { list:params.list, name:params.name }, callback, 'json');
+		$.post(this.mtt.mttUrl+'list/rename', { list:params.list, name:params.name }, callback, 'json');
 	},
 
 	deleteList: function(params, callback)
 	{
-		$.post(this.mtt.mttUrl+'ajax.php?deleteList', { list:params.list }, callback, 'json');
+		$.post(this.mtt.mttUrl+'list/delete', { list:params.list }, callback, 'json');
 	},
 
 	publishList: function(params, callback)
