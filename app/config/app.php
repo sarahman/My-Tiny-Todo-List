@@ -8,7 +8,7 @@ $config['infoEmail']    = ''; // Info Email Address
 $config['infoName']     = ''; // Info Name
 
 $config['template_url'] = '/assets/themes'; // Info Name
-$config['is_rtl_needed'] = true;
+$config['is_rtl'] = false;
 $config['autotag'] = 1;
 $config['duedateformat'] = 1;
 $config['firstdayofweek'] = 1;

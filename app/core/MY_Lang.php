@@ -2,6 +2,7 @@
 
 class MY_Lang extends CI_Lang
 {
+    protected $rtl = 0;
     public function makeJS()
     {
         $a = array();
@@ -45,5 +46,34 @@ class MY_Lang extends CI_Lang
     public function rtl()
     {
         return $this->rtl ? 1 : 0;
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * Fetch a single line of text from the language array
+     *
+     * @access    public
+     * @param     string    $line    the language line
+     * @return    string
+     */
+    public function line($line = '')
+    {
+        if (empty($line)) {
+            $line = false;
+        } elseif (!empty($this->language[$line])) {
+            $line = $this->language[$line];
+        } elseif (!empty($this->language['inc'][$line])) {
+            $line = $this->language['inc'][$line];
+        } else {
+            $line = false;
+        }
+
+        // Because killer robots like unicorns!
+        if ($line === FALSE) {
+            log_message('error', 'Could not find the language line "'.$line.'"');
+        }
+
+        return $line;
     }
 }

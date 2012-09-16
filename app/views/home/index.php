@@ -1,10 +1,10 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title><?php echo $this->config->item('site_title') ?></title>
     <link rel="stylesheet" type="text/css" href="<?php echo site_url($this->config->item('template_url') . '/' . $this->config->item('template')); ?>/style.css?v=1.4.2" media="all"/>
-    <?php if ($this->config->item('is_rtl_needed')): ?>
+    <?php if ($this->config->item('is_rtl')) : ?>
     <link rel="stylesheet" type="text/css" href="<?php echo site_url($this->config->item('template_url') . '/' . $this->config->item('template')); ?>/style_rtl.css?v=1.4.2" media="all"/>
     <?php endif; ?>
     <?php if (isset($_GET['pda'])): ?>

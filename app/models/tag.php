@@ -1,11 +1,11 @@
 <?php
 
-class ToDoList extends My_Model
+class Tag extends My_Model
 {
     public function __construct()
     {
         parent::__construct();
-        $this->loadTable('todolist');
+        $this->loadTable('tags');
     }
 
     public function getTagId($tag)
