@@ -56,14 +56,14 @@ mytinytodoStorageAjax.prototype =
 
 	newTask: function(params, callback)
 	{
-		$.post(this.mtt.mttUrl+'ajax.php?newTask',
+		$.post(this.mtt.mttUrl+'task/add',
 			{ list:params.list, title: params.title, tag:params.tag }, callback, 'json');
 	},
 	
 
 	fullNewTask: function(params, callback)
 	{
-		$.post(this.mtt.mttUrl+'ajax.php?fullNewTask',
+		$.post(this.mtt.mttUrl+'task/addFully',
 			{ list:params.list, title:params.title, note:params.note, prio:params.prio, tags:params.tags, duedate:params.duedate },
 			callback, 'json');
 	},

@@ -67,8 +67,7 @@ class ToDoList extends My_Model
         $compl = isset($data['compl']) ? 1 : 0;
         $task = $this->find(array($this->primaryKey => $taskId), 'list_id');
         $listId = $task['list_id'];
-        $ow = $this->find(array('list_id' => $listId, 'compl' => $compl), 'MAX(ow) AS ow');
-        $ow = $ow['ow'] + 1;
+        $ow = $this->getMaximumOW($listId, $compl);
         $dateCompleted = $compl ? time() : 0;
         return $this->update(array('compl' => $compl, 'ow' => $ow, 'd_completed' => $dateCompleted, 'd_edited' => time()), $taskId);
     }
@@ -80,5 +79,137 @@ class ToDoList extends My_Model
                             SELECT id FROM {$this->db->dbprefix('todolist')} WHERE `list_id` = ? and `compl`='1')", array($data['list']));
         $this->db->query("DELETE FROM {$this->db->dbprefix('todolist')} WHERE `list_id` = ? and `compl`='1'", array($data['list']));
         $this->db->trans_complete();
+    }
+
+    public function add(array $data)
+    {
+        $title = $data['title'];
+        $listId = $data['list'];
+        $prio = 0;
+        $tags = '';
+        if ($this->config->item('smartsyntax') != 0) {
+            $a = $this->parseSmartSyntax($title);
+            if (empty($a)) { return false; }
+            $title = $a['title'];
+            $prio = $a['prio'];
+            $tags = $a['tags'];
+        }
+        if ($title == '') return false;
+        if ($this->config->item('autotag')) $tags .= ','.$data['tag'];
+
+        $CI = &get_instance();
+        $CI->load->helper('database');
+        $data['uuid'] = generateUUID();
+        $data['title'] = $title;
+        $data['list_id'] = $listId;
+        $data['ow'] = $this->getMaximumOW($listId, 0);
+        $data['prio'] = $prio;
+        $data['d_created'] = $data['d_edited'] = time();
+        $this->db->trans_start();
+        $taskId = $this->insert($data);
+        $this->dealsWithTags($tags, $listId, $taskId);
+        $this->db->trans_complete();
+        return $taskId;
+    }
+
+    public function addFully(array $data)
+    {
+        $title = $data['title'];
+        if ($title == '') {
+            return false;
+        }
+
+        $listId = $data['list'];
+
+        $prio = (int)$data['prio'];
+        if ($prio < -1) $prio = -1;
+        elseif($prio > 2) $prio = 2;
+
+        $tags = $data['tags'];
+        $note = str_replace("\r\n", "\n", trim($data['note']));
+        $duedate = parse_duedate(trim($data['duedate']));
+        if ($this->config->item('autotag')) $tags .= ','.$data['tags'];
+
+        $CI = &get_instance();
+        $CI->load->helper('database');
+        $data['uuid'] = generateUUID();
+        $data['list_id'] = $listId;
+        $data['title'] = $title;
+        $data['note'] = $note;
+        $data['ow'] = $this->getMaximumOW($listId, 0);
+        $data['prio'] = $prio;
+        $data['duedate'] = $duedate;
+        $data['d_created'] = $data['d_edited'] = time();
+        $this->db->trans_start();
+        $taskId = $this->insert($data);
+        $this->dealsWithTags($tags, $listId, $taskId);
+        $this->db->trans_complete();
+        return $taskId;
+    }
+
+    private function dealsWithTags($tags, $listId, $taskId)
+    {
+        if ($tags == '') { return; }
+        $aTags = $this->prepareTags($tags);
+        if (empty($aTags)) { return; }
+        $this->addTaskTags($taskId, $aTags['ids'], $listId);
+        $this->update(array(
+            'tags' => implode(',',$aTags['tags']),
+            'tags_ids' => implode(',',$aTags['ids'])
+        ), $taskId);
+    }
+
+    protected function getMaximumOW($listId, $compl)
+    {
+        $ow = $this->find(array('list_id' => $listId, 'compl' => $compl), 'MAX(`ow`) AS ow');
+        return $ow['ow'] + 1;
+    }
+
+    protected function parseSmartSyntax($title)
+    {
+        if (!preg_match("|^(/([+-]{0,1}\d+)?/)?(.*?)(\s+/([^/]*)/$)?$|", $title, $m)) {
+            return false;
+        }
+
+        $a = array();
+        $a['prio'] = isset($m[2]) ? (int)$m[2] : 0;
+        $a['title'] = isset($m[3]) ? trim($m[3]) : '';
+        $a['tags'] = isset($m[5]) ? trim($m[5]) : '';
+
+        if ($a['prio'] < -1) $a['prio'] = -1;
+        elseif ($a['prio'] > 2) $a['prio'] = 2;
+
+        return $a;
+    }
+
+    function prepareTags($tagsStr)
+    {
+        $tags = explode(',', $tagsStr);
+        if(!$tags) return array();
+
+        $aTags = array('tags'=>array(), 'ids'=>array());
+        $CI = &get_instance();
+        $CI->load->model('tag');
+        foreach($tags AS $tag) {
+            $tag = str_replace(array('"',"'",'<','>','&','/','\\','^'),'',trim($tag));
+            if ($tag == '') continue;
+
+            $aTag = $CI->tag->getOrCreateTag($tag);
+            if($aTag && !in_array($aTag['id'], $aTags['ids'])) {
+                $aTags['tags'][] = $aTag['name'];
+                $aTags['ids'][] = $aTag['id'];
+            }
+        }
+
+        return $aTags;
+    }
+
+    protected function addTaskTags($taskId, $tagIds, $listId)
+    {
+        if (empty($tagIds)) return;
+        foreach($tagIds as $tagId) {
+            $this->db->query("INSERT INTO {$this->db->dbprefix('tag2task')} (`task_id`, `tag_id`, `list_id`)
+                                VALUES (?, ?, ?)", array($taskId, $tagId, $listId));
+        }
     }
 }

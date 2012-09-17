@@ -1,6 +1,75 @@
 <?php defined('BASEPATH') || exit('No direct script access allowed');
 
 /**
+ * parse due date
+ *
+ * @access    public
+ * @return    integer
+ */
+if (!function_exists('parse_duedate')) {
+    function parse_duedate($s)
+    {
+        $CI = &get_instance();
+        $df2 = $CI->config->item('dateformat2');
+        if (max((int)strpos($df2, 'n'), (int)strpos($df2, 'm')) > max((int)strpos($df2, 'd'), (int)strpos($df2, 'j'))) $formatDayFirst = true;
+        else $formatDayFirst = false;
+
+        $y = $m = $d = 0;
+        if (preg_match("|^(\d+)-(\d+)-(\d+)\b|", $s, $ma)) {
+            $y = (int)$ma[1];
+            $m = (int)$ma[2];
+            $d = (int)$ma[3];
+        }
+        elseif (preg_match("|^(\d+)\/(\d+)\/(\d+)\b|", $s, $ma))
+        {
+            if ($formatDayFirst) {
+                $d = (int)$ma[1];
+                $m = (int)$ma[2];
+                $y = (int)$ma[3];
+            } else {
+                $m = (int)$ma[1];
+                $d = (int)$ma[2];
+                $y = (int)$ma[3];
+            }
+        }
+        elseif (preg_match("|^(\d+)\.(\d+)\.(\d+)\b|", $s, $ma)) {
+            $d = (int)$ma[1];
+            $m = (int)$ma[2];
+            $y = (int)$ma[3];
+        }
+        elseif (preg_match("|^(\d+)\.(\d+)\b|", $s, $ma)) {
+            $d = (int)$ma[1];
+            $m = (int)$ma[2];
+            $a = explode(',', date('Y,m,d'));
+            if ($m < (int)$a[1] || ($m == (int)$a[1] && $d < (int)$a[2])) $y = (int)$a[0] + 1;
+            else $y = (int)$a[0];
+        }
+        elseif (preg_match("|^(\d+)\/(\d+)\b|", $s, $ma))
+        {
+            if ($formatDayFirst) {
+                $d = (int)$ma[1];
+                $m = (int)$ma[2];
+            } else {
+                $m = (int)$ma[1];
+                $d = (int)$ma[2];
+            }
+            $a = explode(',', date('Y,m,d'));
+            if ($m < (int)$a[1] || ($m == (int)$a[1] && $d < (int)$a[2])) $y = (int)$a[0] + 1;
+            else $y = (int)$a[0];
+        }
+        else return null;
+        if ($y < 100) $y = 2000 + $y;
+        elseif ($y < 1000 || $y > 2099) $y = 2000 + (int)substr((string)$y, -2);
+        if ($m > 12) $m = 12;
+        $maxdays = daysInMonth($m, $y);
+        if ($m < 10) $m = '0' . $m;
+        if ($d > $maxdays) $d = $maxdays;
+        elseif ($d < 10) $d = '0' . $d;
+        return "$y-$m-$d";
+    }
+}
+
+/**
  * Prepare due date
  *
  * @access    public
@@ -107,14 +176,14 @@ if (!function_exists('formatDate3')) {
         $ml = $CI->lang->line('months_long');
         $ms = $CI->lang->line('months_short');
         $Y = $ay;
-        $y = $Y < 2010 ? '0'.($Y-2000) : $Y-2000;
+        $y = $Y < 2010 ? '0' . ($Y - 2000) : $Y - 2000;
         $n = $am;
-        $m = $n < 10 ? '0'.$n : $n;
-        $F = $ml[$am-1];
-        $M = $ms[$am-1];
+        $m = $n < 10 ? '0' . $n : $n;
+        $F = $ml[$am - 1];
+        $M = $ms[$am - 1];
         $j = $ad;
-        $d = $j < 10 ? '0'.$j : $j;
-        return strtr($format, array('Y'=>$Y, 'y'=>$y, 'F'=>$F, 'M'=>$M, 'n'=>$n, 'm'=>$m, 'd'=>$d, 'j'=>$j));
+        $d = $j < 10 ? '0' . $j : $j;
+        return strtr($format, array('Y' => $Y, 'y' => $y, 'F' => $F, 'M' => $M, 'n' => $n, 'm' => $m, 'd' => $d, 'j' => $j));
     }
 }
 
@@ -164,11 +233,11 @@ if (!function_exists('formatTime')) {
 if (!function_exists('date2int')) {
     function date2int($d)
     {
-        if(!$d) return 33330000;
+        if (!$d) return 33330000;
         $ad = explode('-', $d);
         $s = $ad[0];
-        if(strlen($ad[1]) < 2) $s .= "0$ad[1]"; else $s .= $ad[1];
-        if(strlen($ad[2]) < 2) $s .= "0$ad[2]"; else $s .= $ad[2];
+        if (strlen($ad[1]) < 2) $s .= "0$ad[1]"; else $s .= $ad[1];
+        if (strlen($ad[2]) < 2) $s .= "0$ad[2]"; else $s .= $ad[2];
         return (int)$s;
     }
 }
@@ -186,11 +255,11 @@ if (!function_exists('date2int')) {
  * @return    string
  */
 if (!function_exists('daysInMonth')) {
-    function daysInMonth($m, $y=0)
+    function daysInMonth($m, $y = 0)
     {
-        if($y == 0) $y = (int)date('Y');
-        $a = array(1=>31,(($y-2000)%4?28:29),31,30,31,30,31,31,30,31,30,31);
-        if(isset($a[$m])) return $a[$m]; else return 0;
+        if ($y == 0) $y = (int)date('Y');
+        $a = array(1 => 31, (($y - 2000) % 4 ? 28 : 29), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
+        if (isset($a[$m])) return $a[$m]; else return 0;
     }
 }
 

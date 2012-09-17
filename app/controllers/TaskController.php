@@ -72,11 +72,9 @@ class TaskController extends BaseController
         elseif($sort == 104) $sqlSort .= "d_edited DESC, prio ASC, ow DESC";		// byDateModified (reverse)
         else $sqlSort .= "ow ASC";
 
-        $t = array();
-        $t['total'] = 0;
-        $t['list'] = array();
         $q = $this->todolist->executeQuery("SELECT *, duedate IS NULL AS ddn FROM {$dbPrefix}todolist $inner WHERE 1=1 $sqlWhere $sqlSort");
 
+        $t = array('total' => 0, 'list' => array());
         foreach ($q AS $r) {
             $t['total']++;
             $t['list'][] = $this->todolist->prepareTaskRow($r);
@@ -88,10 +86,35 @@ class TaskController extends BaseController
         $this->jsonExit($t);
     }
 
+    public function add()
+    {
+        $this->dealsWithAdding();
+    }
+
+    public function addFully()
+    {
+        $this->dealsWithAdding(true);
+    }
+
+    private function dealsWithAdding($fully = false)
+    {
+        $this->load->model('tinylist');
+        $this->load->model('todolist');
+        $listId = $this->input->post('list');
+        $this->checkWriteAccess($listId, $this->tinylist);
+        $taskId = empty($fully) ? $this->todolist->add($_POST) : $this->todolist->addFully($_POST);
+        if (empty($taskId)) {
+            $this->jsonExit(array('total' => 0));
+        }
+        $result = $this->todolist->get(array('id' => $taskId));
+        $this->jsonExit($result);
+
+    }
+
     public function complete()
     {
+        $this->checkWriteAccess();
         $this->load->model('todolist');
-        $this->checkWriteAccess(null, $this->todolist);
         $taskId = $this->todolist->completeTask($_POST);
         $result = $this->todolist->get(array('id' =>$taskId));
         $this->jsonExit($result);
@@ -99,11 +122,22 @@ class TaskController extends BaseController
 
     public function clearCompleted()
     {
+        $this->checkWriteAccess();
         $this->load->model('todolist');
         $this->load->model('tinylist');
-        $this->checkWriteAccess(null, $this->todolist);
         $this->todolist->deleteCompletedTask($_POST);
         $result = $this->tinylist->get();
         $this->jsonExit($result);
+    }
+
+    public function suggestTags()
+    {
+        $this->load->model('tinylist');
+        $this->load->model('tag');
+        $this->checkReadAccess($this->input->get('list'), $this->tinylist);
+        $suggestion = $this->tag->getTagSuggestion($_GET);
+        $this->load->helper('array');
+        echo htmlarray($suggestion);
+        exit;
     }
 }

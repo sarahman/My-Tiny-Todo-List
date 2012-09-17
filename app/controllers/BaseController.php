@@ -71,17 +71,17 @@ abstract class BaseController extends CI_Controller
         $this->jsonExit(array('total' => 0, 'list' => array(), 'denied' => 1));
     }
 
-    protected function checkWriteAccess($listId = null, $model)
+    protected function checkWriteAccess($listId = null, $model = null)
     {
         if ($this->haveWriteAccess($listId, $model)) return;
         $this->jsonExit( array('total'=>0, 'list'=>array(), 'denied'=>1) );
     }
 
-    protected function haveWriteAccess($listId = null, $model)
+    protected function haveWriteAccess($listId = null, $model = null)
     {
         if ($this->is_readonly()) {
             return false;
-        } elseif ($listId !== null) {
+        } elseif ($listId !== null && $model !== null) {
             return $model->checkListExist($listId);
         }
 
