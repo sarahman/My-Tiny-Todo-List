@@ -41,10 +41,34 @@ class TinyList extends My_Model
 
     public function modify(array $data)
     {
-        $data['name'] = str_replace(array('"',"'",'<','>','&'),array('','','','',''),$data['name']);
+        empty($data['name']) || $data['name'] = str_replace(array('"',"'",'<','>','&'),array('','','','',''),$data['name']);
+        !isset($data['publish']) || $data['published'] = $data['publish'] ? 1 : 0;
+        !isset($data['shownotes']) || $data['taskview'] = ($data['shownotes']) ? 'taskview | 2' : 'taskview & ~2';
+        !isset($data['hide']) || $data['taskview'] = ($data['hide']) ? 'taskview | 4' : 'taskview & ~4';
         $data['d_edited'] = time();
 
         return $this->update($data, $data['list']);
+    }
+
+    public function changeOrder(array $data)
+    {
+        $t = array();
+        $t['total'] = 0;
+        if (!empty($data['order'])) {
+            $a = array();
+            $setCase = '';
+            foreach ($data['order'] AS $ow => $id) {
+                $id = (int)$id;
+                $a[] = $id;
+                $setCase .= "WHEN id={$id} THEN {$ow}\n";
+            }
+            $ids = implode($a, ',');
+            $this->db->query("UPDATE {$this->db->dbprefix('lists')} SET d_edited=?, ow = CASE\n {$setCase} END WHERE id IN ({$ids})",
+                        array(time()) );
+            $t['total'] = 1;
+        }
+
+        return $t;
     }
 
     public function delete(array $data)

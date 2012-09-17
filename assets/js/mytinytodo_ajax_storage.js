@@ -50,7 +50,7 @@ mytinytodoStorageAjax.prototype =
 		})
 */
 
-		$.getJSON(this.mtt.mttUrl+'home/loadTasks/list/'+params.list+'/compl/'+params.compl+'/sort/'+params.sort+q, callback);
+		$.getJSON(this.mtt.mttUrl+'task/loadTasks/list/'+params.list+'/compl/'+params.compl+'/sort/'+params.sort+q, callback);
 	},
 
 
@@ -85,7 +85,7 @@ mytinytodoStorageAjax.prototype =
 
 	completeTask: function(params, callback)
 	{
-		$.post(this.mtt.mttUrl+'ajax.php?completeTask='+params.id, { id:params.id, compl:params.compl }, callback, 'json');
+		$.post(this.mtt.mttUrl+'task/complete', { id:params.id, compl:params.compl }, callback, 'json');
 	},
 
 
@@ -150,27 +150,27 @@ mytinytodoStorageAjax.prototype =
 
 	publishList: function(params, callback)
 	{
-		$.post(this.mtt.mttUrl+'ajax.php?publishList', { list:params.list, publish:params.publish },  callback, 'json');
+		$.post(this.mtt.mttUrl+'list/publish', { list:params.list, publish:params.publish },  callback, 'json');
 	},
 	
 	setShowNotesInList: function(params, callback)
 	{
-	    $.post(this.mtt.mttUrl+'ajax.php?setShowNotesInList', { list:params.list, shownotes:params.shownotes },  callback, 'json');
+	    $.post(this.mtt.mttUrl+'list/setShowNotes', { list:params.list, shownotes:params.shownotes },  callback, 'json');
 	},
 	
 	setHideList: function(params, callback)
 	{
-		$.post(this.mtt.mttUrl+'ajax.php?setHideList', { list:params.list, hide:params.hide }, callback, 'json');
+		$.post(this.mtt.mttUrl+'list/setHide', { list:params.list, hide:params.hide }, callback, 'json');
 	},
 
 	changeListOrder: function(params, callback)
 	{
-		$.post(this.mtt.mttUrl+'ajax.php?changeListOrder', { order:params.order }, callback, 'json');
+		$.post(this.mtt.mttUrl+'list/changeOrder', { order:params.order }, callback, 'json');
 	},
 
 	clearCompletedInList: function(params, callback)
 	{
-		$.post(this.mtt.mttUrl+'ajax.php?clearCompletedInList', { list:params.list }, callback, 'json');
+		$.post(this.mtt.mttUrl+'task/clearCompleted', { list:params.list }, callback, 'json');
 	}
 
 };

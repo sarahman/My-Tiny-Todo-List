@@ -8,6 +8,20 @@ class ToDoList extends My_Model
         $this->loadTable('todolist');
     }
 
+    public function get($conditions = array())
+    {
+        $result = $this->findAll($conditions, '*');
+
+        $temp = array();
+        $temp['total'] = 0;
+        foreach($result AS $row) {
+            $temp['total']++;
+            $temp['list'][] = $this->prepareTaskRow($row);
+        }
+
+        return $temp;
+    }
+
     public function prepareTaskRow($row)
     {
         $CI = &get_instance();
@@ -45,5 +59,26 @@ class ToDoList extends My_Model
             'dueInt' => date2int($row['duedate']),
             'dueTitle' => htmlarray(sprintf($CI->lang->line('taskdate_inline_duedate'), $dueA['formatted'])),
         );
+    }
+
+    public function completeTask(array $data)
+    {
+        $taskId = $data['id'];
+        $compl = isset($data['compl']) ? 1 : 0;
+        $task = $this->find(array($this->primaryKey => $taskId), 'list_id');
+        $listId = $task['list_id'];
+        $ow = $this->find(array('list_id' => $listId, 'compl' => $compl), 'MAX(ow) AS ow');
+        $ow = $ow['ow'] + 1;
+        $dateCompleted = $compl ? time() : 0;
+        return $this->update(array('compl' => $compl, 'ow' => $ow, 'd_completed' => $dateCompleted, 'd_edited' => time()), $taskId);
+    }
+
+    public function deleteCompletedTask(array $data)
+    {
+        $this->db->trans_start();
+        $this->db->query("DELETE FROM {$this->db->dbprefix('tag2task')} WHERE `task_id` IN (
+                            SELECT id FROM {$this->db->dbprefix('todolist')} WHERE `list_id` = ? and `compl`='1')", array($data['list']));
+        $this->db->query("DELETE FROM {$this->db->dbprefix('todolist')} WHERE `list_id` = ? and `compl`='1'", array($data['list']));
+        $this->db->trans_complete();
     }
 }

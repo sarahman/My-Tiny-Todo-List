@@ -40,4 +40,36 @@ class ListController extends BaseController
         $result = $this->tinylist->get();
         $this->jsonExit($result);
     }
+
+    public function publish()
+    {
+        $this->load->model('tinylist');
+        $this->checkWriteAccess(null, $this->tinylist);
+        $this->tinylist->modify($_POST);
+        $this->jsonExit(array('total'=>1));
+    }
+
+    public function setShowNotes()
+    {
+        $this->load->model('tinylist');
+        $this->checkWriteAccess(null, $this->tinylist);
+        $this->tinylist->modify($_POST);
+        $this->jsonExit(array('total'=>1));
+    }
+
+    public function setHide()
+    {
+        $this->load->model('tinylist');
+        $this->checkWriteAccess(null, $this->tinylist);
+        $this->tinylist->modify($_POST);
+        $this->jsonExit(array('total'=>1));
+    }
+
+    public function changeOrder()
+    {
+        $this->load->model('tinylist');
+        $this->checkWriteAccess(null, $this->tinylist);
+        $result = $this->tinylist->changeOrder($_POST);
+        $this->jsonExit($result);
+    }
 }

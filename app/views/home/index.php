@@ -331,10 +331,10 @@
 <div id="slmenucontainer" class="mtt-menu-container" style="display:none">
     <ul>
         <li id="slmenu_list:-1"
-            class="list-id--1 mtt-need-list" <?php if (is_readonly()) echo 'style="display:none"' ?>>
+            class="list-id--1 mtt-need-list" <?php if (!empty($is_readonly)) echo 'style="display:none"' ?>>
             <div class="menu-icon"></div>
             <a href="#alltasks"><?php echo lang('alltasks') ?></a></li>
-        <li class="mtt-menu-delimiter slmenu-lists-begin mtt-need-list" <?php if (is_readonly()) echo 'style="display:none"' ?>></li>
+        <li class="mtt-menu-delimiter slmenu-lists-begin mtt-need-list" <?php if (!empty($is_readonly)) echo 'style="display:none"' ?>></li>
     </ul>
 </div>
 
