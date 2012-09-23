@@ -141,6 +141,20 @@ class TaskController extends BaseController
         $this->jsonExit($result);
     }
 
+    public function editNote()
+    {
+        $this->load->model('todolist');
+        $this->checkWriteAccess(null, $this->todolist);
+        $taskId = $this->todolist->updateNote($_POST);
+        $t = array();
+        $t['total'] = 1;
+        $t['list'][] = array(
+            'id' => $taskId,
+            'note' => nl2br(escapeTags($this->input->post('note'))),
+            'noteText'=>(string)$this->input->post('note'));
+        $this->jsonExit($t);
+    }
+
     public function complete()
     {
         $this->checkWriteAccess();

@@ -163,12 +163,19 @@ class ToDoList extends My_Model
         $list = $this->find(array($this->primaryKey => $taskId), 'list_id');
         $tags = trim($data['tags']);
         $this->db->trans_start();
-	    $this->db->query("DELETE FROM {$this->db->dbprefix('tag2task')} WHERE `task_id`='{$taskId}'");
+        $this->db->query("DELETE FROM {$this->db->dbprefix('tag2task')} WHERE `task_id`='{$taskId}'");
         $this->dealsWithTags($tags, $list['list_id'], $taskId, array(
             'title' => $title, 'note' => $note, 'prio' => $prio, 'duedate' => $duedate, 'd_edited' => time()
         ));
         $this->db->trans_complete();
         return $taskId;
+    }
+
+    public function updateNote(array $data)
+    {
+        $taskId = (int)$data['id'];
+        $note = str_replace("\r\n", "\n", trim($data['note']));
+            return $this->update(array('note' => $note, 'd_edited' => time()), $taskId);
     }
 
     private function dealsWithTags($tags, $listId, $taskId, array $dataToBeUpdated = array())
