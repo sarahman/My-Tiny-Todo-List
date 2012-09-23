@@ -171,6 +171,17 @@ class ToDoList extends My_Model
         return $taskId;
     }
 
+    public function delete(array $data)
+    {
+        $taskId = (int)$data['id'];
+
+        $this->db->trans_start();
+        $this->db->query("DELETE FROM {$this->db->dbprefix('tag2task')} WHERE `task_id`='$taskId'");
+        $result = $this->remove($taskId);
+        $this->db->trans_complete();
+        return $result;
+    }
+
     public function updateNote(array $data)
     {
         $taskId = (int)$data['id'];

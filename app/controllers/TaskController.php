@@ -131,8 +131,8 @@ class TaskController extends BaseController
 
     public function edit()
     {
+        $this->checkWriteAccess();
         $this->load->model('todolist');
-        $this->checkWriteAccess(null, $this->todolist);
         $taskId = $this->todolist->edit($_POST);
         if (empty($taskId)) {
             $this->jsonExit(array('total' => 0));
@@ -143,8 +143,8 @@ class TaskController extends BaseController
 
     public function editNote()
     {
+        $this->checkWriteAccess();
         $this->load->model('todolist');
-        $this->checkWriteAccess(null, $this->todolist);
         $taskId = $this->todolist->updateNote($_POST);
         $t = array();
         $t['total'] = 1;
@@ -152,6 +152,18 @@ class TaskController extends BaseController
             'id' => $taskId,
             'note' => nl2br(escapeTags($this->input->post('note'))),
             'noteText'=>(string)$this->input->post('note'));
+        $this->jsonExit($t);
+    }
+
+    public function delete()
+    {
+        $this->checkWriteAccess();
+        $this->load->model('todolist');
+        $deleted = $this->todolist->delete($_POST);
+
+        $t = array();
+        $t['total'] = $deleted;
+        $t['list'][] = array('id' => $this->input->post('id'));
         $this->jsonExit($t);
     }
 

@@ -73,7 +73,7 @@
         },
 
         deleteTask:function (params, callback) {
-            $.post(this.mtt.mttUrl + 'ajax.php?deleteTask=' + params.id, { id:params.id }, callback, 'json');
+            $.post(this.mtt.mttUrl + 'task/delete', { id:params.id }, callback, 'json');
         },
 
         setPrio:function (params, callback) {

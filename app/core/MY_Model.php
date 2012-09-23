@@ -143,7 +143,8 @@ class MY_Model extends CI_Model
             return false;
         }
 
-        return $this->db->delete($this->tableName, array($this->primaryKey => $id));
+        $this->db->delete($this->tableName, array($this->primaryKey => $id));
+        return $this->db->affected_rows();
     }
 
     protected function removeByField($data = array(), $field = null)
@@ -168,7 +169,7 @@ class MY_Model extends CI_Model
         return true;
     }
 
-    public function __call ($method, $args)
+    public function __call($method, $args)
     {
         $watch = array('findBy','findAllBy');
 
