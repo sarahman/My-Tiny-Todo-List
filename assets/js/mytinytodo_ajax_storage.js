@@ -71,7 +71,7 @@ mytinytodoStorageAjax.prototype =
 
 	editTask: function(params, callback)
 	{
-		$.post(this.mtt.mttUrl+'ajax.php?editTask='+params.id,
+		$.post(this.mtt.mttUrl+'task/edit',
 			{ id:params.id, title:params.title, note:params.note, prio:params.prio, tags:params.tags, duedate:params.duedate },
 			callback, 'json');
 	},

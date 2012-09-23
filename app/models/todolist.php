@@ -147,15 +147,39 @@ class ToDoList extends My_Model
         return $taskId;
     }
 
-    private function dealsWithTags($tags, $listId, $taskId)
+    public function edit(array $data)
+    {
+        $taskId = (int)$data['id'];
+        $title = trim($data['title']);
+        $note = str_replace("\r\n", "\n", trim($data['note']));
+        $prio = (int)$data['prio'];
+        if ($prio < -1) $prio = -1;
+        elseif ($prio > 2) $prio = 2;
+        $duedate = parse_duedate(trim($data['duedate']));
+        if (empty ($title)) {
+            return false;
+        }
+
+        $list = $this->find(array($this->primaryKey => $taskId), 'list_id');
+        $tags = trim($data['tags']);
+        $this->db->trans_start();
+	    $this->db->query("DELETE FROM {$this->db->dbprefix('tag2task')} WHERE `task_id`='{$taskId}'");
+        $this->dealsWithTags($tags, $list['list_id'], $taskId, array(
+            'title' => $title, 'note' => $note, 'prio' => $prio, 'duedate' => $duedate, 'd_edited' => time()
+        ));
+        $this->db->trans_complete();
+        return $taskId;
+    }
+
+    private function dealsWithTags($tags, $listId, $taskId, array $dataToBeUpdated = array())
     {
         if ($tags == '') { return; }
         $aTags = $this->prepareTags($tags);
         if (empty($aTags)) { return; }
         $this->addTaskTags($taskId, $aTags['ids'], $listId);
-        $this->update(array(
+        $this->update(array_merge($dataToBeUpdated, array(
             'tags' => implode(',',$aTags['tags']),
-            'tags_ids' => implode(',',$aTags['ids'])
+            'tags_ids' => implode(',',$aTags['ids']))
         ), $taskId);
     }
 
@@ -182,7 +206,7 @@ class ToDoList extends My_Model
         return $a;
     }
 
-    function prepareTags($tagsStr)
+    private function prepareTags($tagsStr)
     {
         $tags = explode(',', $tagsStr);
         if(!$tags) return array();

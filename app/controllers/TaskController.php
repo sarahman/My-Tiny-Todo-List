@@ -18,61 +18,80 @@ class TaskController extends BaseController
         $sqlWhere = $inner = '';
         $listId = $getData['list'];
         $dbPrefix = $this->db->dbprefix;
-        if($listId == -1) {
+        if ($listId == -1) {
             $userLists = $this->tinylist->getUserListsSimple();
             $sqlWhere .= " AND {$dbPrefix}todolist.list_id IN (". implode(array_keys($userLists), ','). ") ";
         }
-        else $sqlWhere .= " AND {$dbPrefix}todolist.list_id=". $listId;
+        else $sqlWhere .= " AND {$dbPrefix}todolist.list_id={$listId}";
         if ($getData['compl'] == 0) $sqlWhere .= ' AND compl=0';
 
         $tag = empty($getData['t']) ? '' : $getData['t'];
-        if($tag != '')
-        {
+        if (!empty($tag)) {
             $at = explode(',', $tag);
             $tagIds = array();
             $tagExIds = array();
-            foreach($at as $atv) {
+            foreach ($at as $atv) {
                 $atv = trim($atv);
-                if($atv == '' || $atv == '^') continue;
-                if(substr($atv,0,1) == '^') {
+                if ($atv == '' || $atv == '^') continue;
+                if (substr($atv,0,1) == '^') {
                     $tagExIds[] = $this->tag->getTagId(substr($atv,1));
                 } else {
                     $tagIds[] = $this->tag->getTagId($atv);
                 }
             }
 
-            if(sizeof($tagIds) > 1) {
-                $inner .= "INNER JOIN (SELECT task_id, COUNT(tag_id) AS c FROM {$dbPrefix}tag2task WHERE list_id=$listId AND tag_id IN (".
+            if (sizeof($tagIds) > 1) {
+                $inner .= "INNER JOIN (SELECT task_id, COUNT(tag_id) AS c FROM {$dbPrefix}tag2task WHERE list_id={$listId} AND tag_id IN (".
                             implode(',',$tagIds). ") GROUP BY task_id) AS t2t ON id=t2t.task_id";
                 $sqlWhere = " AND c=". sizeof($tagIds); //overwrite sqlWhere!
             }
-            elseif($tagIds) {
+            elseif (!empty($tagIds)) {
                 $inner .= "INNER JOIN {$dbPrefix}tag2task ON id=task_id";
                 $sqlWhere .= " AND tag_id = ". $tagIds[0];
             }
 
-            if($tagExIds) {
-                $sqlWhere .= " AND id NOT IN (SELECT DISTINCT task_id FROM {$dbPrefix}tag2task WHERE list_id=$listId AND tag_id IN (".
+            if (!empty($tagExIds)) {
+                $sqlWhere .= " AND id NOT IN (SELECT DISTINCT task_id FROM {$dbPrefix}tag2task WHERE list_id={$listId} AND tag_id IN (".
                             implode(',',$tagExIds). "))"; //DISTINCT ?
             }
         }
 
-        $this->load->helper('database_helper');
+        $this->load->helper('database');
         $s = $this->uri->segment('s');
-        if($s != '') $sqlWhere .= " AND (title LIKE ". quoteForLike("%%%s%%",$s). " OR note LIKE ". quoteForLike("%%%s%%",$s). ")";
+        if ($s != '') $sqlWhere .= " AND (title LIKE ". quoteForLike("%%%s%%",$s). " OR note LIKE ". quoteForLike("%%%s%%",$s). ")";
         $sort = (int)$this->uri->segment('sort');
         $sqlSort = "ORDER BY compl ASC, ";
-        if($sort == 1) $sqlSort .= "prio DESC, ddn ASC, duedate ASC, ow ASC";		// byPrio
-        elseif($sort == 101) $sqlSort .= "prio ASC, ddn DESC, duedate DESC, ow DESC";	// byPrio (reverse)
-        elseif($sort == 2) $sqlSort .= "ddn ASC, duedate ASC, prio DESC, ow ASC";	// byDueDate
-        elseif($sort == 102) $sqlSort .= "ddn DESC, duedate DESC, prio ASC, ow DESC";// byDueDate (reverse)
-        elseif($sort == 3) $sqlSort .= "d_created ASC, prio DESC, ow ASC";			// byDateCreated
-        elseif($sort == 103) $sqlSort .= "d_created DESC, prio ASC, ow DESC";		// byDateCreated (reverse)
-        elseif($sort == 4) $sqlSort .= "d_edited ASC, prio DESC, ow ASC";			// byDateModified
-        elseif($sort == 104) $sqlSort .= "d_edited DESC, prio ASC, ow DESC";		// byDateModified (reverse)
-        else $sqlSort .= "ow ASC";
+        switch ($sort) {
+            case 1:		// byPrio
+                $sqlSort .= "prio DESC, ddn ASC, duedate ASC, ow ASC"; break;
 
-        $q = $this->todolist->executeQuery("SELECT *, duedate IS NULL AS ddn FROM {$dbPrefix}todolist $inner WHERE 1=1 $sqlWhere $sqlSort");
+            case 2:		// byDueDate
+                $sqlSort .= "ddn ASC, duedate ASC, prio DESC, ow ASC"; break;
+
+            case 3:		// byDateCreated
+                $sqlSort .= "d_created ASC, prio DESC, ow ASC"; break;
+
+            case 4:		// byDateModified
+                $sqlSort .= "d_edited ASC, prio DESC, ow ASC"; break;
+
+            case 101:	// byPrio (reverse)
+                $sqlSort .= "prio ASC, ddn DESC, duedate DESC, ow DESC"; break;
+
+            case 102:	// byDueDate (reverse)
+                $sqlSort .= "ddn DESC, duedate DESC, prio ASC, ow DESC"; break;
+
+            case 103:	// byDateCreated (reverse)
+                $sqlSort .= "d_created DESC, prio ASC, ow DESC"; break;
+
+            case 104:	// byDateModified (reverse)
+                $sqlSort .= "d_edited DESC, prio ASC, ow DESC"; break;
+
+            default:
+                $sqlSort .= "ow ASC"; break;
+        }
+
+        $q = $this->todolist->executeQuery(
+            "SELECT *, `duedate` IS NULL AS ddn FROM {$dbPrefix}todolist {$inner} WHERE 1=1 {$sqlWhere} {$sqlSort}");
 
         $t = array('total' => 0, 'list' => array());
         foreach ($q AS $r) {
@@ -108,7 +127,18 @@ class TaskController extends BaseController
         }
         $result = $this->todolist->get(array('id' => $taskId));
         $this->jsonExit($result);
+    }
 
+    public function edit()
+    {
+        $this->load->model('todolist');
+        $this->checkWriteAccess(null, $this->todolist);
+        $taskId = $this->todolist->edit($_POST);
+        if (empty($taskId)) {
+            $this->jsonExit(array('total' => 0));
+        }
+        $result = $this->todolist->get(array('id' => $taskId));
+        $this->jsonExit($result);
     }
 
     public function complete()
