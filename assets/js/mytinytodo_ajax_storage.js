@@ -97,7 +97,7 @@
         },
 
         moveTask:function (params, callback) {
-            $.post(this.mtt.mttUrl + 'ajax.php?moveTask', { id:params.id, from:params.from, to:params.to }, callback, 'json');
+            $.post(this.mtt.mttUrl + 'task/move', { id:params.id, from:params.from, to:params.to }, callback, 'json');
         },
 
         parseTaskStr:function (params, callback) {

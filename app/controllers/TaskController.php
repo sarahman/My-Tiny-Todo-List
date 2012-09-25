@@ -174,6 +174,19 @@ class TaskController extends BaseController
         $this->jsonExit($t);
     }
 
+    public function move()
+    {
+        $this->checkWriteAccess();
+        $this->load->model('todolist');
+        $result = $this->todolist->move($_POST);
+        $temp = array('total' => empty ($result) ? 0 : 1);
+        if (!empty ($result) && $this->input->post('from') == -1) {
+            $temp = $this->todolist->get(array('id' => $this->input->post('id')));
+        }
+
+        $this->jsonExit($temp);
+    }
+
     public function delete()
     {
         $this->checkWriteAccess();

@@ -202,6 +202,30 @@ class ToDoList extends My_Model
         return array('taskId' => $result, 'prio' => $priority);
     }
 
+    public function move(array $data)
+    {
+        $taskId = (int)$_POST['id'];
+        $fromListId = (int)$_POST['from'];
+        $toListId = (int)$_POST['to'];
+
+        // Check task exists and not in target list
+        $list = $this->find(array($this->primaryKey => $taskId), 'list_id');
+        if (empty ($list) || $toListId == $list['list_id']) return false;
+
+        // Check target list exists
+        $CI = & get_instance();
+        $CI->load->model('tinylist');
+        if (!$CI->tinylist->checkListExist($toListId)) return false;
+
+        $ow = $this->getMaximumOW($toListId, empty($list['compl']) ? 0 : 1);
+
+        $this->db->trans_start();
+        $this->db->query("UPDATE `{$this->db->dbprefix('tag2task')}` SET `list_id`=? WHERE `task_id`=?", array($toListId, $taskId));
+        $this->updateNow(array('list_id' => $toListId, 'ow' => $ow), $taskId);
+        $this->db->trans_complete();
+        return true;
+    }
+
     public function changeOrder(array $data)
     {
         $orderStr = $data['order'];
