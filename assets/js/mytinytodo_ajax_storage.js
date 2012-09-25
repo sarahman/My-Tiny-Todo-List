@@ -81,7 +81,7 @@
         },
 
         setSort:function (params, callback) {
-            $.post(this.mtt.mttUrl + 'ajax.php?setSort', { list:params.list, sort:params.sort }, callback, 'json');
+            $.post(this.mtt.mttUrl + 'list/setSort', { list:params.list, sort:params.sort }, callback, 'json');
         },
 
         changeOrder:function (params, callback) {

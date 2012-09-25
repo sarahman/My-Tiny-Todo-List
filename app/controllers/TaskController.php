@@ -17,12 +17,11 @@ class TaskController extends BaseController
 
         $sqlWhere = $inner = '';
         $listId = $getData['list'];
-        $dbPrefix = $this->db->dbprefix;
         if ($listId == -1) {
             $userLists = $this->tinylist->getUserListsSimple();
-            $sqlWhere .= " AND {$dbPrefix}todolist.list_id IN (". implode(array_keys($userLists), ','). ") ";
+            $sqlWhere .= " AND `{$this->db->dbprefix('todolist')}`.`list_id` IN (". implode(array_keys($userLists), ','). ") ";
         }
-        else $sqlWhere .= " AND {$dbPrefix}todolist.list_id={$listId}";
+        else $sqlWhere .= " AND `{$this->db->dbprefix('todolist')}`.`list_id`='{$listId}'";
         if ($getData['compl'] == 0) $sqlWhere .= ' AND compl=0';
 
         $tag = empty($getData['t']) ? '' : $getData['t'];
@@ -41,25 +40,26 @@ class TaskController extends BaseController
             }
 
             if (sizeof($tagIds) > 1) {
-                $inner .= "INNER JOIN (SELECT task_id, COUNT(tag_id) AS c FROM {$dbPrefix}tag2task WHERE list_id={$listId} AND tag_id IN (".
-                            implode(',',$tagIds). ") GROUP BY task_id) AS t2t ON id=t2t.task_id";
-                $sqlWhere = " AND c=". sizeof($tagIds); //overwrite sqlWhere!
+                $inner .= "INNER JOIN (SELECT `task_id`, COUNT(`tag_id`) AS `c` FROM `{$this->db->dbprefix('tag2task')}`
+                           WHERE `list_id`='{$listId}' AND `tag_id` IN ('".implode("', '",$tagIds). "')
+                           GROUP BY `task_id`) AS `t2t` ON `id`=`t2t`.`task_id`";
+                $sqlWhere = " AND `c`=". sizeof($tagIds); //overwrite sqlWhere!
             }
-            elseif (!empty($tagIds)) {
-                $inner .= "INNER JOIN {$dbPrefix}tag2task ON id=task_id";
-                $sqlWhere .= " AND tag_id = ". $tagIds[0];
+            elseif (!empty ($tagIds)) {
+                $inner .= "INNER JOIN `{$this->db->dbprefix('tag2task')}` ON `id`=`task_id`";
+                $sqlWhere .= " AND `tag_id` = ". $tagIds[0];
             }
 
             if (!empty($tagExIds)) {
-                $sqlWhere .= " AND id NOT IN (SELECT DISTINCT task_id FROM {$dbPrefix}tag2task WHERE list_id={$listId} AND tag_id IN (".
-                            implode(',',$tagExIds). "))"; //DISTINCT ?
+                $sqlWhere .= " AND `id` NOT IN (SELECT DISTINCT `task_id` FROM `{$this->db->dbprefix('tag2task')}`
+                               WHERE `list_id`='{$listId}' AND `tag_id` IN ('".implode("', '",$tagExIds)."'))"; //DISTINCT ?
             }
         }
 
         $this->load->helper('database');
-        $s = $this->uri->segment('s');
+        $s = empty($getData['s']) ? '' : $getData['s'];
         if ($s != '') $sqlWhere .= " AND (title LIKE ". quoteForLike("%%%s%%",$s). " OR note LIKE ". quoteForLike("%%%s%%",$s). ")";
-        $sort = (int)$this->uri->segment('sort');
+        $sort = (int)$getData['sort'];
         $sqlSort = "ORDER BY compl ASC, ";
         switch ($sort) {
             case 1:		// byPrio
@@ -90,16 +90,19 @@ class TaskController extends BaseController
                 $sqlSort .= "ow ASC"; break;
         }
 
-        $q = $this->todolist->executeQuery(
-            "SELECT *, `duedate` IS NULL AS ddn FROM {$dbPrefix}todolist {$inner} WHERE 1=1 {$sqlWhere} {$sqlSort}");
+        $sql = "SELECT *, `duedate` IS NULL AS ddn
+                FROM {$this->db->dbprefix('todolist')} {$inner}
+                WHERE 1=1 {$sqlWhere} {$sqlSort}";
+
+        $result = $this->todolist->executeQuery($sql);
 
         $t = array('total' => 0, 'list' => array());
-        foreach ($q AS $r) {
+        foreach ($result AS $row) {
             $t['total']++;
-            $t['list'][] = $this->todolist->prepareTaskRow($r);
+            $t['list'][] = $this->todolist->prepareTaskRow($row);
         }
-        if ($this->uri->segment('setCompl') && $this->haveWriteAccess($listId, $this->tinylist)) {
-            $bitwise = ($this->uri->segment('compl') == 0) ? 'taskview & ~1' : 'taskview | 1';
+        if (!empty ($getData['setCompl']) && $this->haveWriteAccess($listId, $this->tinylist)) {
+            $bitwise = ($getData['compl'] == 0) ? 'taskview & ~1' : 'taskview | 1';
             $this->tinylist->update(array('taskview' => $bitwise), $listId);
         }
         $this->jsonExit($t);

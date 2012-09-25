@@ -45,6 +45,7 @@ class TinyList extends My_Model
         !isset($data['publish']) || $data['published'] = $data['publish'] ? 1 : 0;
         !isset($data['shownotes']) || $data['taskview'] = ($data['shownotes']) ? 'taskview | 2' : 'taskview & ~2';
         !isset($data['hide']) || $data['taskview'] = ($data['hide']) ? 'taskview | 4' : 'taskview & ~4';
+        !isset($data['sort']) || $data['sorting'] = $this->filterSorting($data['sort']);
         $data['d_edited'] = time();
 
         return $this->update($data, $data['list']);
@@ -103,7 +104,7 @@ class TinyList extends My_Model
         return !empty($result);
     }
 
-    function checkListExist($listId = null)
+    public function checkListExist($listId = null)
     {
         $result = $this->findCount(array('id' => $listId));
         return !empty($result);
@@ -121,5 +122,13 @@ class TinyList extends My_Model
             'showNotes' => $taskview & 2 ? 1 : 0,
             'hidden' => $taskview & 4 ? 1 : 0,
         );
+    }
+
+    private function filterSorting($sort)
+    {
+        if ($sort < 0 || $sort > 104) $sort = 0;
+        elseif ($sort < 101 && $sort > 4) $sort = 0;
+
+        return $sort;
     }
 }
