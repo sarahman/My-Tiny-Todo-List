@@ -77,7 +77,7 @@
         },
 
         setPrio:function (params, callback) {
-            $.getJSON(this.mtt.mttUrl + 'ajax.php?setPrio=' + params.id + '&prio=' + params.prio + '&rnd=' + Math.random(), callback);
+            $.getJSON(this.mtt.mttUrl + 'task/setPriority/id/' + params.id + '/prio/' + params.prio + '/rnd/' + Math.random(), callback);
         },
 
         setSort:function (params, callback) {

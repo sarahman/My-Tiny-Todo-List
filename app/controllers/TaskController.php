@@ -152,6 +152,22 @@ class TaskController extends BaseController
             'id' => $taskId,
             'note' => nl2br(escapeTags($this->input->post('note'))),
             'noteText'=>(string)$this->input->post('note'));
+
+        $this->jsonExit($t);
+    }
+
+    public function setPriority()
+    {
+        $data = $this->uri->uri_to_assoc();
+        $this->checkWriteAccess();
+        $this->load->model('todolist');
+        $result = $this->todolist->updatePriority($data);
+        $t = array();
+        $t['total'] = 1;
+        $t['list'][] = array(
+            'id' => $result['taskId'],
+            'prio' => $result['prio']);
+
         $this->jsonExit($t);
     }
 

@@ -69,7 +69,8 @@ class ToDoList extends My_Model
         $listId = $task['list_id'];
         $ow = $this->getMaximumOW($listId, $compl);
         $dateCompleted = $compl ? time() : 0;
-        return $this->update(array('compl' => $compl, 'ow' => $ow, 'd_completed' => $dateCompleted, 'd_edited' => time()), $taskId);
+
+        return $this->updateNow(array('compl' => $compl, 'ow' => $ow, 'd_completed' => $dateCompleted), $taskId);
     }
 
     public function deleteCompletedTask(array $data)
@@ -85,13 +86,13 @@ class ToDoList extends My_Model
     {
         $title = $data['title'];
         $listId = $data['list'];
-        $prio = 0;
+        $priority = 0;
         $tags = '';
         if ($this->config->item('smartsyntax') != 0) {
             $a = $this->parseSmartSyntax($title);
             if (empty($a)) { return false; }
             $title = $a['title'];
-            $prio = $a['prio'];
+            $priority = $a['prio'];
             $tags = $a['tags'];
         }
         if ($title == '') return false;
@@ -103,12 +104,14 @@ class ToDoList extends My_Model
         $data['title'] = $title;
         $data['list_id'] = $listId;
         $data['ow'] = $this->getMaximumOW($listId, 0);
-        $data['prio'] = $prio;
+        $data['prio'] = $priority;
         $data['d_created'] = $data['d_edited'] = time();
+
         $this->db->trans_start();
         $taskId = $this->insert($data);
         $this->dealsWithTags($tags, $listId, $taskId);
         $this->db->trans_complete();
+
         return $taskId;
     }
 
@@ -121,12 +124,10 @@ class ToDoList extends My_Model
 
         $listId = $data['list'];
 
-        $prio = (int)$data['prio'];
-        if ($prio < -1) $prio = -1;
-        elseif($prio > 2) $prio = 2;
+        $note = $this->filterNote($data['note']);
+        $priority = $this->filterPriority((int)$data['prio']);
 
         $tags = $data['tags'];
-        $note = str_replace("\r\n", "\n", trim($data['note']));
         $duedate = parse_duedate(trim($data['duedate']));
         if ($this->config->item('autotag')) $tags .= ','.$data['tags'];
 
@@ -137,9 +138,10 @@ class ToDoList extends My_Model
         $data['title'] = $title;
         $data['note'] = $note;
         $data['ow'] = $this->getMaximumOW($listId, 0);
-        $data['prio'] = $prio;
+        $data['prio'] = $priority;
         $data['duedate'] = $duedate;
         $data['d_created'] = $data['d_edited'] = time();
+
         $this->db->trans_start();
         $taskId = $this->insert($data);
         $this->dealsWithTags($tags, $listId, $taskId);
@@ -149,23 +151,22 @@ class ToDoList extends My_Model
 
     public function edit(array $data)
     {
-        $taskId = (int)$data['id'];
         $title = trim($data['title']);
-        $note = str_replace("\r\n", "\n", trim($data['note']));
-        $prio = (int)$data['prio'];
-        if ($prio < -1) $prio = -1;
-        elseif ($prio > 2) $prio = 2;
-        $duedate = parse_duedate(trim($data['duedate']));
         if (empty ($title)) {
             return false;
         }
 
-        $list = $this->find(array($this->primaryKey => $taskId), 'list_id');
+        $taskId = (int)$data['id'];
+        $note = $this->filterNote($data['note']);
+        $priority = $this->filterPriority((int)$data['prio']);
+        $dueDate = parse_duedate(trim($data['duedate']));
         $tags = trim($data['tags']);
+        $list = $this->find(array($this->primaryKey => $taskId), 'list_id');
+
         $this->db->trans_start();
         $this->db->query("DELETE FROM {$this->db->dbprefix('tag2task')} WHERE `task_id`='{$taskId}'");
         $this->dealsWithTags($tags, $list['list_id'], $taskId, array(
-            'title' => $title, 'note' => $note, 'prio' => $prio, 'duedate' => $duedate, 'd_edited' => time()
+            'title' => $title, 'note' => $note, 'prio' => $priority, 'duedate' => $dueDate, 'd_edited' => time()
         ));
         $this->db->trans_complete();
         return $taskId;
@@ -185,8 +186,38 @@ class ToDoList extends My_Model
     public function updateNote(array $data)
     {
         $taskId = (int)$data['id'];
-        $note = str_replace("\r\n", "\n", trim($data['note']));
-            return $this->update(array('note' => $note, 'd_edited' => time()), $taskId);
+        $note = $this->filterNote($data['note']);
+        return $this->updateNow(array('note' => $note), $taskId);
+    }
+
+    public function updatePriority(array $data)
+    {
+        $taskId = (int)$data['id'];
+        $priority = $this->filterPriority($data['prio']);
+        $result = $this->updateNow(array('prio' => $priority), $taskId);
+        if (empty ($result)) {
+            return false;
+        }
+
+        return array('taskId' => $result, 'prio' => $priority);
+    }
+
+    private function updateNow(array $data, $taskId)
+    {
+        return $this->update(array_merge($data, array('d_edited' => time())), $taskId);
+    }
+
+    private function filterNote($note)
+    {
+        return str_replace("\r\n", "\n", trim($note));
+    }
+
+    private function filterPriority($priority)
+    {
+        if ($priority < -1) $priority = -1;
+        elseif ($priority > 2) $priority = 2;
+
+        return $priority;
     }
 
     private function dealsWithTags($tags, $listId, $taskId, array $dataToBeUpdated = array())
