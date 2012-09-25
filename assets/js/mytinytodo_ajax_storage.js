@@ -89,7 +89,7 @@
             for (var i in params.order) {
                 order += params.order[i].id + '=' + params.order[i].diff + '&';
             }
-            $.post(this.mtt.mttUrl + 'ajax.php?changeOrder', { order:order }, callback, 'json');
+            $.post(this.mtt.mttUrl + 'task/changeOrder', { order:order }, callback, 'json');
         },
 
         tagCloud:function (params, callback) {

@@ -215,4 +215,12 @@ class TaskController extends BaseController
         echo htmlarray($suggestion);
         exit;
     }
+
+    public function changeOrder()
+    {
+        $this->checkWriteAccess();
+        $this->load->model('todolist');
+        $result = $this->todolist->changeOrder($_POST);
+        $this->jsonExit(array('total' => empty($result) ? 0 : 1));
+    }
 }

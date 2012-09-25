@@ -202,6 +202,31 @@ class ToDoList extends My_Model
         return array('taskId' => $result, 'prio' => $priority);
     }
 
+    public function changeOrder(array $data)
+    {
+        $orderStr = $data['order'];
+        parse_str($orderStr, $order);
+
+        if (empty ($order)) {
+            return false;
+        }
+
+        $ad = array();
+        foreach($order AS $id => $diff) {
+            $ad[(int)$diff][] = (int)$id;
+        }
+
+        $this->db->trans_start();
+        foreach($ad as $diff => $ids) {
+            if ($diff >= 0) $set = "`ow`=`ow`+".$diff;
+            else $set = "`ow`=`ow`-".abs($diff);
+            $sql = "UPDATE `{$this->db->dbprefix('todolist')}` SET {$set}, `d_edited`=? WHERE `id` IN ('".implode("', '", $ids)."')";
+            $this->db->query($sql, array(time()));
+        }
+        $this->db->trans_complete();
+        return true;
+    }
+
     private function updateNow(array $data, $taskId)
     {
         return $this->update(array_merge($data, array('d_edited' => time())), $taskId);
