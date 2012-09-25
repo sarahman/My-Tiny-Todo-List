@@ -229,6 +229,25 @@ class TaskController extends BaseController
         exit;
     }
 
+    public function parseString()
+    {
+        $this->checkWriteAccess();
+        $temp = array(
+            'title' => trim($this->input->post('title')),
+            'prio' => 0,
+            'tags' => ''
+        );
+        if ($this->config->item('smartsyntax') != 0) {
+            $this->load->model('todolist');
+            $a = $this->todolist->parseSmartSyntax($temp['title']);
+            if (!empty ($a)) {
+                $temp = $a;
+            }
+        }
+
+        $this->jsonExit($temp);
+    }
+
     public function changeOrder()
     {
         $this->checkWriteAccess();

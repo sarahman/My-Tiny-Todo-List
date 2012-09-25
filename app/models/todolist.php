@@ -115,6 +115,23 @@ class ToDoList extends My_Model
         return $taskId;
     }
 
+    public function parseSmartSyntax($title)
+    {
+        if (!preg_match("|^(/([+-]{0,1}\d+)?/)?(.*?)(\s+/([^/]*)/$)?$|", $title, $m)) {
+            return false;
+        }
+
+        $a = array();
+        $a['title'] = isset($m[3]) ? trim($m[3]) : '';
+        $a['prio'] = isset($m[2]) ? (int)$m[2] : 0;
+        $a['tags'] = isset($m[5]) ? trim($m[5]) : '';
+
+        if ($a['prio'] < -1) $a['prio'] = -1;
+        elseif ($a['prio'] > 2) $a['prio'] = 2;
+
+        return $a;
+    }
+
     public function addFully(array $data)
     {
         $title = $data['title'];
@@ -204,9 +221,8 @@ class ToDoList extends My_Model
 
     public function move(array $data)
     {
-        $taskId = (int)$_POST['id'];
-        $fromListId = (int)$_POST['from'];
-        $toListId = (int)$_POST['to'];
+        $taskId = (int)$data['id'];
+        $toListId = (int)$data['to'];
 
         // Check task exists and not in target list
         $list = $this->find(array($this->primaryKey => $taskId), 'list_id');
@@ -285,23 +301,6 @@ class ToDoList extends My_Model
     {
         $ow = $this->find(array('list_id' => $listId, 'compl' => $compl), 'MAX(`ow`) AS ow');
         return $ow['ow'] + 1;
-    }
-
-    protected function parseSmartSyntax($title)
-    {
-        if (!preg_match("|^(/([+-]{0,1}\d+)?/)?(.*?)(\s+/([^/]*)/$)?$|", $title, $m)) {
-            return false;
-        }
-
-        $a = array();
-        $a['prio'] = isset($m[2]) ? (int)$m[2] : 0;
-        $a['title'] = isset($m[3]) ? trim($m[3]) : '';
-        $a['tags'] = isset($m[5]) ? trim($m[5]) : '';
-
-        if ($a['prio'] < -1) $a['prio'] = -1;
-        elseif ($a['prio'] > 2) $a['prio'] = 2;
-
-        return $a;
     }
 
     private function prepareTags($tagsStr)

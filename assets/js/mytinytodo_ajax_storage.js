@@ -101,7 +101,7 @@
         },
 
         parseTaskStr:function (params, callback) {
-            $.post(this.mtt.mttUrl + 'ajax.php?parseTaskStr', { list:params.list, title:params.title, tag:params.tag }, callback, 'json');
+            $.post(this.mtt.mttUrl + 'task/parseString', { list:params.list, title:params.title, tag:params.tag }, callback, 'json');
         },
 
         // Lists
