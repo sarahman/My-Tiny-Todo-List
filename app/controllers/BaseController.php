@@ -64,7 +64,11 @@ abstract class BaseController extends CI_Controller
 
     protected function checkReadAccess($listId = null, $model)
     {
-        if (!$this->is_logged() || $model->checkPublishedListExist($listId)) {
+        if (!$this->config->item('password') || $this->is_logged()) {
+            return;
+        }
+
+        if (!empty ($listId) && $model->checkPublishedListExist($listId)) {
             return;
         }
 

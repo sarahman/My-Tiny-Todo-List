@@ -18,4 +18,15 @@ class HomeController extends BaseController
         header('Content-type: text/javascript; charset=utf-8');
         echo "mytinytodo.lang.init(". $this->lang->makeJS() .");";
     }
+
+    public function getTagCloud()
+    {
+        $this->load->model('tinylist');
+        $data = $this->uri->uri_to_assoc();
+        $this->checkReadAccess((int)$data['list'], $this->tinylist);
+
+        $this->load->model('tag');
+        $tagCloud = $this->tag->getTagCloud($data);
+        $this->jsonExit($tagCloud);
+    }
 }

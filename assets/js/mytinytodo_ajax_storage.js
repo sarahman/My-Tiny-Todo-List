@@ -93,7 +93,7 @@
         },
 
         tagCloud:function (params, callback) {
-            $.getJSON(this.mtt.mttUrl + 'ajax.php?tagCloud&list=' + params.list + '&rnd=' + Math.random(), callback);
+            $.getJSON(this.mtt.mttUrl + 'home/getTagCloud/list/' + params.list + '/rnd/' + Math.random(), callback);
         },
 
         moveTask:function (params, callback) {
